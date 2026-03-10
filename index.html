@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Maze Game</title>
+<style>
+body{
+    margin:0;
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:#111;
+    font-family:Arial, sans-serif;
+    color:white;
+    flex-direction:column;
+}
+h1{
+    margin-bottom:10px;
+}
+canvas{
+    background:#222;
+    border:3px solid #555;
+}
+button{
+    margin-top:10px;
+    padding:8px 15px;
+    border:none;
+    background:#28a745;
+    color:white;
+    border-radius:5px;
+    cursor:pointer;
+}
+button:hover{
+    background:#218838;
+}
+#message{
+    margin-top:10px;
+    font-size:18px;
+}
+</style>
+</head>
+<body>
+
+<h1>Maze Game</h1>
+<canvas id="mazeCanvas" width="500" height="500"></canvas>
+<button onclick="restart()">Restart Maze</button>
+<div id="message"></div>
+
+<script>
+const canvas = document.getElementById("mazeCanvas");
+const ctx = canvas.getContext("2d");
+
+const rows = 20;
+const cols = 20;
+const cellSize = canvas.width / cols;
+
+let grid = [];
+let stack = [];
+let player = {x:0, y:0};
+let end = {x:cols-1, y:rows-1};
+
+class Cell{
+    constructor(x,y){
+        this.x=x;
+        this.y=y;
+        this.walls=[true,true,true,true]; // top right bottom left
+        this.visited=false;
+    }
+    draw(){
+        let x=this.x*cellSize;
+        let y=this.y*cellSize;
+
+        ctx.strokeStyle="white";
+        if(this.walls[0]) drawLine(x,y,x+cellSize,y);
+        if(this.walls[1]) drawLine(x+cellSize,y,x+cellSize,y+cellSize);
+        if(this.walls[2]) drawLine(x+cellSize,y+cellSize,x,y+cellSize);
+        if(this.walls[3]) drawLine(x,y+cellSize,x,y);
+    }
+}
+
+function drawLine(x1,y1,x2,y2){
+    ctx.beginPath();
+    ctx.moveTo(x1,y1);
+    ctx.lineTo(x2,y2);
+    ctx.stroke();
+}
+
+function index(x,y){
+    if(x<0||y<0||x>=cols||y>=rows) return -1;
+    return x + y*cols;
+}
+
+function generateMaze(){
+    grid=[];
+    stack=[];
+    for(let y=0;y<rows;y++){
+        for(let x=0;x<cols;x++){
+            grid.push(new Cell(x,y));
+        }
+    }
+
+    let current = grid[0];
+    current.visited=true;
+
+    while(true){
+        let neighbors=[];
+        let directions=[
+            {dx:0,dy:-1,wall:0,opp:2},
+            {dx:1,dy:0,wall:1,opp:3},
+            {dx:0,dy:1,wall:2,opp:0},
+            {dx:-1,dy:0,wall:3,opp:1}
+        ];
+
+        for(let dir of directions){
+            let nx=current.x+dir.dx;
+            let ny=current.y+dir.dy;
+            let next=grid[index(nx,ny)];
+            if(next && !next.visited){
+                neighbors.push({cell:next,dir});
+            }
+        }
+
+        if(neighbors.length>0){
+            let random = neighbors[Math.floor(Math.random()*neighbors.length)];
+            current.walls[random.dir.wall]=false;
+            random.cell.walls[random.dir.opp]=false;
+            stack.push(current);
+            current=random.cell;
+            current.visited=true;
+        }else if(stack.length>0){
+            current=stack.pop();
+        }else{
+            break;
+        }
+    }
+}
+
+function drawMaze(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    for(let cell of grid){
+        cell.draw();
+    }
+
+    // draw end
+    ctx.fillStyle="green";
+    ctx.fillRect(end.x*cellSize+5,end.y*cellSize+5,cellSize-10,cellSize-10);
+
+    // draw player
+    ctx.fillStyle="red";
+    ctx.fillRect(player.x*cellSize+8,player.y*cellSize+8,cellSize-16,cellSize-16);
+}
+
+function movePlayer(dx,dy){
+    let current=grid[index(player.x,player.y)];
+    if(dx===0 && dy===-1 && !current.walls[0]) player.y--;
+    if(dx===1 && dy===0 && !current.walls[1]) player.x++;
+    if(dx===0 && dy===1 && !current.walls[2]) player.y++;
+    if(dx===-1 && dy===0 && !current.walls[3]) player.x--;
+
+    if(player.x===end.x && player.y===end.y){
+        document.getElementById("message").textContent="🎉 You Escaped!";
+    }
+
+    drawMaze();
+}
+
+document.addEventListener("keydown",e=>{
+    if(e.key==="ArrowUp") movePlayer(0,-1);
+    if(e.key==="ArrowDown") movePlayer(0,1);
+    if(e.key==="ArrowLeft") movePlayer(-1,0);
+    if(e.key==="ArrowRight") movePlayer(1,0);
+});
+
+function restart(){
+    player={x:0,y:0};
+    document.getElementById("message").textContent="";
+    generateMaze();
+    drawMaze();
+}
+
+restart();
+</script>
+
+</body>
+</html>
