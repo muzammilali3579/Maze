@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Hardcore Maze Escape</title>
+<title>Maze Escape - Balanced Mode</title>
 <style>
 body{
     margin:0;
@@ -11,18 +11,15 @@ body{
     flex-direction:column;
     align-items:center;
     justify-content:center;
-    background:#0f172a;
+    background:#111827;
     font-family:Arial;
     color:white;
 }
-h1{margin-bottom:5px;}
 canvas{
     background:black;
     border:3px solid #555;
 }
-.info{
-    margin:8px;
-}
+.info{margin:8px;}
 button{
     padding:8px 15px;
     border:none;
@@ -36,28 +33,27 @@ button:hover{background:#1d4ed8;}
 </head>
 <body>
 
-<h1>Maze Escape - Hardcore Mode</h1>
+<h2>Maze Escape</h2>
 <div class="info">
 Time: <span id="time">0</span>s |
 Lives: <span id="lives">3</span>
 </div>
-<canvas id="maze" width="600" height="600"></canvas>
+<canvas id="maze" width="540" height="540"></canvas>
 <button onclick="restart()">Restart</button>
 
 <script>
 const canvas=document.getElementById("maze");
 const ctx=canvas.getContext("2d");
 
-const rows=25, cols=25;
+const rows=18, cols=18;
 const size=canvas.width/cols;
 
 let grid=[], stack=[];
-let player, end;
-let lives=3;
-let timer=0;
-let traps=[];
-let teleports=[];
-let fogRadius=2;
+let player={x:0,y:0};
+let end={x:cols-1,y:rows-1};
+let lives=3, timer=0;
+let traps=[], teleports=[];
+let fogRadius=4;
 let interval;
 
 class Cell{
@@ -76,11 +72,9 @@ if(this.walls[2]) line(x+size,y+size,x,y+size);
 if(this.walls[3]) line(x,y+size,x,y);
 }
 }
-
 function line(x1,y1,x2,y2){
 ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
 }
-
 function index(x,y){
 if(x<0||y<0||x>=cols||y>=rows) return -1;
 return x+y*cols;
@@ -94,7 +88,6 @@ grid.push(new Cell(x,y));
 }}
 let current=grid[0];
 current.visited=true;
-
 while(true){
 let neighbors=[];
 let dirs=[
@@ -121,15 +114,13 @@ current=stack.pop();
 }
 }
 
-function placeSpecialTiles(){
+function placeSpecial(){
 traps=[];
 teleports=[];
-for(let i=0;i<10;i++){
+for(let i=0;i<4;i++){
 traps.push(randomCell());
 }
-for(let i=0;i<2;i++){
 teleports.push(randomCell());
-}
 }
 
 function randomCell(){
@@ -141,41 +132,32 @@ y:Math.floor(Math.random()*rows)
 
 function draw(){
 ctx.clearRect(0,0,canvas.width,canvas.height);
-
 for(let cell of grid){
 if(Math.abs(cell.x-player.x)<=fogRadius &&
 Math.abs(cell.y-player.y)<=fogRadius){
 cell.draw();
 }
 }
-
 drawTile(end,"green");
 drawTile(player,"red");
-
-for(let t of traps){
-drawTile(t,"purple");
-}
-for(let t of teleports){
-drawTile(t,"cyan");
-}
+for(let t of traps) drawTile(t,"purple");
+for(let t of teleports) drawTile(t,"cyan");
 }
 
 function drawTile(obj,color){
 if(Math.abs(obj.x-player.x)<=fogRadius &&
 Math.abs(obj.y-player.y)<=fogRadius){
 ctx.fillStyle=color;
-ctx.fillRect(obj.x*size+5,obj.y*size+5,size-10,size-10);
+ctx.fillRect(obj.x*size+6,obj.y*size+6,size-12,size-12);
 }
 }
 
 function move(dx,dy){
 let current=grid[index(player.x,player.y)];
-
 if(dx===0 && dy===-1 && !current.walls[0]) player.y--;
 if(dx===1 && dy===0 && !current.walls[1]) player.x++;
 if(dx===0 && dy===1 && !current.walls[2]) player.y++;
 if(dx===-1 && dy===0 && !current.walls[3]) player.x--;
-
 checkSpecial();
 draw();
 }
@@ -185,20 +167,17 @@ for(let t of traps){
 if(player.x===t.x && player.y===t.y){
 lives--;
 document.getElementById("lives").textContent=lives;
-player=randomCell();
 if(lives<=0){
 alert("Game Over!");
 restart();
 }
 }
 }
-
 for(let t of teleports){
 if(player.x===t.x && player.y===t.y){
 player=randomCell();
 }
 }
-
 if(player.x===end.x && player.y===end.y){
 alert("You Escaped in "+timer+" seconds!");
 restart();
@@ -213,8 +192,7 @@ if(e.key==="ArrowRight") move(1,0);
 });
 
 function restart(){
-lives=3;
-timer=0;
+lives=3; timer=0;
 document.getElementById("lives").textContent=lives;
 document.getElementById("time").textContent=timer;
 clearInterval(interval);
@@ -222,11 +200,10 @@ interval=setInterval(()=>{
 timer++;
 document.getElementById("time").textContent=timer;
 },1000);
-
+player={x:0,y:0};
+end={x:cols-1,y:rows-1};
 generate();
-player=randomCell();
-end=randomCell();
-placeSpecialTiles();
+placeSpecial();
 draw();
 }
 
